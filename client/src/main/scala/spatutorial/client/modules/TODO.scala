@@ -128,7 +128,8 @@ object TodoForm {
       // header contains a cancel button (X)
       header = hide => <.span(<.button(^.tpe := "button", bss.close, ^.onClick --> hide(), Icon.close), <.h4(headerText)),
       // footer has the OK button that submits the form before hiding it
-      footer = hide => <.span(Button(Button.Props(() => {B.submitForm(); hide()}), "OK")),
+      footer = hide => <.span(Button(Button.Props(() => {B.submitForm(); hide()}, 
+          addStyles=if(S.item.content.length() < 1) Seq(bss.disabled) else Seq()), "OK")),
       // this is called after the modal has been hidden (animation is completed)
       closed = B.formClosed),
       <.div(bss.formGroup,

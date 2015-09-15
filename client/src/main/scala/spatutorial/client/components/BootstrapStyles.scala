@@ -52,6 +52,7 @@ class BootstrapStyles(implicit r: mutable.Register) extends StyleSheet.Inline()(
     val itemOpt = commonStyle(contextDomain, "list-group-item")
   }
 
+  val pullLeft = styleWrap("pull-left")
   val pullRight = styleWrap("pull-right")
   val buttonXS = styleWrap("btn-xs")
   val close = styleWrap("close")
@@ -62,4 +63,6 @@ class BootstrapStyles(implicit r: mutable.Register) extends StyleSheet.Inline()(
 
   val formGroup = styleWrap("form-group")
   val formControl = styleWrap("form-control")
+  
+  val disabled = styleWrap("disabled")
 }
