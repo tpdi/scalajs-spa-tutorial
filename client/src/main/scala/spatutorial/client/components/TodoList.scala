@@ -40,7 +40,7 @@ object TodoList {
         if (item.completed) <.s(item.content) else <.span(item.content),
         Button(Button.Props(() => P.editItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Edit"),
         Button(Button.Props(() => P.deleteItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Delete"),
-        <.select(bss.pullRight, Seq(bss.pullRight), ^.id := "priority", ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
+        <.select(bss.pullRight, ^.id := "priority", ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
           <.option(^.value := TodoHigh.toString, "High"),
           <.option(^.value := TodoNormal.toString, "Normal"),
           <.option(^.value := TodoLow.toString, "Low")
