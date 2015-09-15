@@ -58,6 +58,7 @@ object Todo {
       // hide the todo dialog
       t.modState(s => s.copy(showTodoForm = false))
     }
+    
   }
 
   // create the React component for ToDo management

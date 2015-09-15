@@ -11,6 +11,18 @@ object TodoList {
   @inline private def bss = GlobalStyles.bootstrapStyles
 
   case class TodoListProps(items: Seq[TodoItem], stateChange: (TodoItem) => Unit, editItem: (TodoItem) => Unit, deleteItem: (TodoItem) => Unit)
+  
+  
+  // I'm "cheating" just a bit: I have no state to mod, but stateChange will send the modification to the server and update all items
+  def updatePriority(item: TodoItem, stateChange: (TodoItem) => Unit)(e: ReactEventI) = {
+      // update TodoItem priority
+      val newPri = e.currentTarget.value match {
+        case p if p == TodoHigh.toString => TodoHigh
+        case p if p == TodoNormal.toString => TodoNormal
+        case p if p == TodoLow.toString => TodoLow
+      }
+      stateChange(item.copy(priority = newPri))
+    }
 
   val TodoList = ReactComponentB[TodoListProps]("TodoList")
     .render(P => {
@@ -27,7 +39,12 @@ object TodoList {
         <.span(" "),
         if (item.completed) <.s(item.content) else <.span(item.content),
         Button(Button.Props(() => P.editItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Edit"),
-        Button(Button.Props(() => P.deleteItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Delete")
+        Button(Button.Props(() => P.deleteItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Delete"),
+        <.select(bss.pullRight, Seq(bss.pullRight), ^.id := "priority", ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
+          <.option(^.value := TodoHigh.toString, "High"),
+          <.option(^.value := TodoNormal.toString, "Normal"),
+          <.option(^.value := TodoLow.toString, "Low")
+        )
       )
     }
     <.ul(style.listGroup)(P.items map renderItem)
