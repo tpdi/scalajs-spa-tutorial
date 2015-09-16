@@ -14,82 +14,53 @@ object TodoList {
 
   case class TodoListProps(items: Seq[TodoItem], stateChange: (TodoItem) => Unit, editItem: (TodoItem) => Unit, deleteItem: (TodoItem) => Unit)
   
-  
-  // I'm "cheating" just a bit: I have no component state to modify, 
-  // but stateChange will send the modification to the server and then update all items and their states
-  
-  // Update priority has TWO argument lists, 
-  // the first that takes a TodoItem and a function,  the second takes a ReactEventI
-  // calling it with just the first argument list returns a function that takes the second argument
-  // list, closing over the the first argument list's arguments
-  
-  def updatePriorityCurried(item: TodoItem, stateChange: (TodoItem) => Unit)(e: ReactEventI) = {
-      // update TodoItem priority; note that foreach is called on an Option, so it's 0 or 1 at most
-      TodoPriority(e.currentTarget.value).foreach( newPri => stateChange(item.copy(priority = newPri)))
-  }
-
   val TodoList = ReactComponentB[TodoListProps]("TodoList")
     .render(P => {
-    val style = bss.listGroup
+      val style = bss.listGroup
+      
+      def renderItem(item: TodoItem) = {
+        // convert priority into Bootstrap style
+        val itemStyle = item.priority match {
+          case TodoLow => style.itemOpt(CommonStyle.info)
+          case TodoNormal => style.item
+          case TodoHigh => style.itemOpt(CommonStyle.danger)
+        }
+        
+        // Now updatePriority is a local nested function too. it comes out the same, we get a closure per item either way.
+        
+        // I'm "cheating" just a bit: I have no component state to modify, 
+        // but stateChange will send the modification to the server and then update all items and their states
+        def updatePriority(e: ReactEventI) = 
+            // update TodoItem priority; note that foreach is called on an Option, so it's 0 or 1 at most
+            TodoPriority(e.currentTarget.value).foreach( newPri => P.stateChange(item.copy(priority = newPri)));
     
-    def renderItem(item: TodoItem) = {
-      // convert priority into Bootstrap style
-      val itemStyle = item.priority match {
-        case TodoLow => style.itemOpt(CommonStyle.info)
-        case TodoNormal => style.item
-        case TodoHigh => style.itemOpt(CommonStyle.danger)
+        // dropdown has gone from a sibling function to a nested function to a val
+        // it no longer depends on P.stateChange, the nested function updatePriority uses P.stateChange directly
+        val dropDown = if (!item.completed) 
+            <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority,
+                  <.option(^.value := TodoHigh.toString, "High"),
+                  <.option(^.value := TodoNormal.toString, "Normal"),
+                  <.option(^.value := TodoLow.toString, "Low")
+            )
+          else <.span(); // the semicolon is optional, but it aids readability
+        
+        <.li(itemStyle)(
+          <.input(Seq(bss.pullLeft, GlobalStyles.padRight), ^.tpe := "checkbox", ^.checked := item.completed, 
+              ^.onChange --> P.stateChange(item.copy(completed = !item.completed))),
+          //<.span(" "),
+          //ReactTagsInput(ref = "uncontrolledtags"),
+          <.span(^.onClick ==> ((e: ReactEventH) => { P.editItem(item);}))(if (item.completed) <.s(item.content) else <.span(item.content)),
+          <.div(bss.pullRight)(
+              Button(Button.Props(() => P.editItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Edit"),
+              Button(Button.Props(() => P.deleteItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Delete"),
+              // use the helper val just to make things a bit more readable
+              dropDown
+          )
+        )
       }
       
-      // note that P is captured by the dropDown closure/local function, so we don't need to pass it, or its stateChange, to the function
-      // let's take this further: by moving dropDown into renderItem, we capture item as well,
-      // so we can remove the item argument to dropdown
-      // But wait! Now we don't even need a function!
-      
-      // Now what about updatePriority?
-      // we can make that a local function too (since stateChange is no longer passed in, we prefix with P.)
-      // it comes out the same, we get a closure per item either way.
-      
-      def updatePriority(e: ReactEventI) = 
-          // update TodoItem priority; note that foreach is called on an Option, so it's 0 or 1 at most
-          TodoPriority(e.currentTarget.value).foreach( newPri => P.stateChange(item.copy(priority = newPri)));
-  
-      
-      val dropDown = if (!item.completed) 
-          <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority,
-                <.option(^.value := TodoHigh.toString, "High"),
-                <.option(^.value := TodoNormal.toString, "Normal"),
-                <.option(^.value := TodoLow.toString, "Low")
-          )
-        else <.span(); // the semi-colon is optional, but it aids readability
-      
-      <.li(itemStyle)(
-        <.input(Seq(bss.pullLeft, GlobalStyles.padRight), ^.tpe := "checkbox", ^.checked := item.completed, 
-            ^.onChange --> P.stateChange(item.copy(completed = !item.completed))),
-        //<.span(" "),
-        //ReactTagsInput(ref = "uncontrolledtags"),
-        <.span(^.onClick ==> ((e: ReactEventH) => { P.editItem(item);}))(if (item.completed) <.s(item.content) else <.span(item.content)),
-        <.div(bss.pullRight)(
-            Button(Button.Props(() => P.editItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Edit"),
-            Button(Button.Props(() => P.deleteItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Delete"),
-            
-            // show the priority dropdown only if the item is not completed
-            // inline (scala's if is an expression, not a statement, like the ternary in other languages)...
-            if (!item.completed) 
-              <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriorityCurried(item, P.stateChange),
-                <.option(^.value := TodoHigh.toString, "High"),
-                <.option(^.value := TodoNormal.toString, "Normal"),
-                <.option(^.value := TodoLow.toString, "Low") 
-              )
-            else 
-              <.span()
-          // or as a helper function if inline becomes too complex
-          , dropDown()
-        )
-      )
-    }
-    
-    <.ul(style.listGroup)(P.items map renderItem)
-  })
+      <.ul(style.listGroup)(P.items map renderItem)
+    })
     .build
 
   def apply(props: TodoListProps) = TodoList(props)
