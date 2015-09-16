@@ -26,17 +26,6 @@ object TodoList {
     .render(P => {
     val style = bss.listGroup
     
-    // note that P is captured by the dropDown closure/local function, so we don't need to pass it, or its stateChange, to the function
-    // note also that because the function is one expression, we don't need curly braces
-    def dropDown(item: TodoItem) = if (!item.completed) 
-        <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
-              <.option(^.value := TodoHigh.toString, "High"),
-              <.option(^.value := TodoNormal.toString, "Normal"),
-              <.option(^.value := TodoLow.toString, "Low")
-        )
-      else <.span()
-    
-    
     def renderItem(item: TodoItem) = {
       // convert priority into Bootstrap style
       val itemStyle = item.priority match {
@@ -44,6 +33,18 @@ object TodoList {
         case TodoNormal => style.item
         case TodoHigh => style.itemOpt(CommonStyle.danger)
       }
+      
+    // note that P is captured by the dropDown closure/local function, so we don't need to pass it, or its stateChange, to the function
+    // let's take this further: by moving dropDown into renderItem, we capture item as well,
+    // so we can remove the item argument to dropdown
+    // note also that because the function is one expression, we don't need curly braces
+    def dropDown = if (!item.completed) 
+        <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
+              <.option(^.value := TodoHigh.toString, "High"),
+              <.option(^.value := TodoNormal.toString, "Normal"),
+              <.option(^.value := TodoLow.toString, "Low")
+        )
+      else <.span()
       <.li(itemStyle)(
         <.input(Seq(bss.pullLeft, GlobalStyles.padRight), ^.tpe := "checkbox", ^.checked := item.completed, 
             ^.onChange --> P.stateChange(item.copy(completed = !item.completed))),
@@ -65,7 +66,7 @@ object TodoList {
             else 
               <.span()
           // or as a helper function if inline becomes too complex
-          , dropDown(item)
+          , dropDown()
         )
       )
     }
