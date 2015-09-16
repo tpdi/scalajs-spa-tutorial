@@ -54,7 +54,7 @@ object TodoList {
               Button(Button.Props(() => P.editItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Edit"),
               Button(Button.Props(() => P.deleteItem(item), addStyles = Seq(bss.pullRight, bss.buttonXS)), "Delete"),
               // use the helper val just to make things a bit more readable
-              dropDown
+              dropDown(^.fontWeight.bolder)
           )
         )
       }
