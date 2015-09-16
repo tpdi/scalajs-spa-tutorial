@@ -17,7 +17,13 @@ object TodoList {
   
   // I'm "cheating" just a bit: I have no component state to modify, 
   // but stateChange will send the modification to the server and then update all items and their states
-  def updatePriority(item: TodoItem, stateChange: (TodoItem) => Unit)(e: ReactEventI) = {
+  
+  // Update priority has TWO argument lists, 
+  // the first that takes a TodoItem and a function,  the second takes a ReactEventI
+  // calling it with just the first argument list returns a function that takes the second argument
+  // list, closing over the the first argument list's arguments
+  
+  def updatePriorityCurried(item: TodoItem, stateChange: (TodoItem) => Unit)(e: ReactEventI) = {
       // update TodoItem priority; note that foreach is called on an Option, so it's 0 or 1 at most
       TodoPriority(e.currentTarget.value).foreach( newPri => stateChange(item.copy(priority = newPri)))
   }
@@ -38,8 +44,18 @@ object TodoList {
       // let's take this further: by moving dropDown into renderItem, we capture item as well,
       // so we can remove the item argument to dropdown
       // But wait! Now we don't even need a function!
+      
+      // Now what about updatePriority?
+      // we can make that a local function too (since stateChange is no longer passed in, we prefix with P.)
+      // it comes out the same, we get a closure per item either way.
+      
+      def updatePriority(e: ReactEventI) = 
+          // update TodoItem priority; note that foreach is called on an Option, so it's 0 or 1 at most
+          TodoPriority(e.currentTarget.value).foreach( newPri => P.stateChange(item.copy(priority = newPri)));
+  
+      
       val dropDown = if (!item.completed) 
-          <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
+          <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority,
                 <.option(^.value := TodoHigh.toString, "High"),
                 <.option(^.value := TodoNormal.toString, "Normal"),
                 <.option(^.value := TodoLow.toString, "Low")
@@ -59,7 +75,7 @@ object TodoList {
             // show the priority dropdown only if the item is not completed
             // inline (scala's if is an expression, not a statement, like the ternary in other languages)...
             if (!item.completed) 
-              <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriority(item, P.stateChange),
+              <.select(bss.pullRight, ^.value := item.priority.toString, ^.onChange ==> updatePriorityCurried(item, P.stateChange),
                 <.option(^.value := TodoHigh.toString, "High"),
                 <.option(^.value := TodoNormal.toString, "Normal"),
                 <.option(^.value := TodoLow.toString, "Low") 
